@@ -12,6 +12,9 @@ let lapCount = 1;
 let lapStartTime = 0;
 let worker = null;
 let resetClicked = false;
+let isFirstLap = true;
+
+let timerStartTime = 0;
 
 toggleBtn.addEventListener('click', function () {
   if (timer) {
@@ -29,17 +32,14 @@ toggleBtn.addEventListener('click', function () {
       second = 0;
       count = 0;
       lapCount = 1;
-      lapStartTime = Date.now(); // Store the lap start time
       resetClicked = false;
     }
 
     timer = true;
-    lapStartTime = Date.now(); // Store the lap start time
-    console.log(lapStartTime);
+    
     toggleBtn.textContent = 'Stop';
     lapBtn.style.display = 'inline';
     resetBtn.style.display = 'none';
-
     if (!worker) {
       worker = new Worker('timer-worker.js');
       worker.addEventListener('message', function (event) {
@@ -49,9 +49,16 @@ toggleBtn.addEventListener('click', function () {
       });
     }
 
+    if (isFirstLap) {
+      lapStartTime = Date.now(); // Store the lap start time only once
+      timerStartTime = lapStartTime;
+      isFirstLap = false;
+    }
+
     worker.postMessage('start');
   }
 });
+
 resetBtn.addEventListener('click', function () {
   resetClicked = true;
   timer = false;
@@ -68,20 +75,26 @@ resetBtn.addEventListener('click', function () {
     worker.terminate();
     worker = null;
   }
+
+  lapStartTime = 0; // Reset the lap start time when resetting the timer
+  isFirstLap = true; // Reset the first lap flag
 });
 
 lapBtn.addEventListener('click', function () {
   if (timer) {
-    
     let lapTime = getFormattedTime(Date.now() - lapStartTime); // Calculate lap time difference
-    console.log(lapTime);
-    console.log(lapStartTime);
-    let lapItem = document.createElement('li');//The createElement() method creates an element node.
-    lapItem.textContent = 'Lap ' + lapCount + ': ' + lapTime;
-    lapList.appendChild(lapItem);//The appendChild() method appends a node (element) as the last child of an element.
+    let lapItem = document.createElement('li');
+    if (isFirstLap) {
+      lapItem.textContent = 'Lap ' + lapCount + ': ' + getFormattedTime(Date.now() - timerStartTime); // Show lap time as current time for the first lap
+    } else {
+      
+      lapItem.textContent = 'Lap ' + lapCount + ': ' + lapTime;
+    }
+    lapList.appendChild(lapItem);
     lapCount++;
-    lapStartTime = Date.now(); // Update the lap start time
-    console.log(lapTime);
+    lapStartTime = Date.now(); // Update the lap start time for the next lap
+
+    
   }
 });
 
